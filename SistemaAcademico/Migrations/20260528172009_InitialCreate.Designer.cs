@@ -11,7 +11,7 @@ using SistemaAcademico.Data;
 namespace SistemaAcademico.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260528155517_InitialCreate")]
+    [Migration("20260528172009_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -44,6 +44,28 @@ namespace SistemaAcademico.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Alunos");
+                });
+
+            modelBuilder.Entity("SistemaAcademico.Models.Curso", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CargaHoraria")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Professor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Cursos");
                 });
 #pragma warning restore 612, 618
         }

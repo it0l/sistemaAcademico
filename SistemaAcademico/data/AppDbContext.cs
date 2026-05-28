@@ -11,4 +11,6 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Aluno> Alunos => Set<Aluno>();
+
+    public DbSet<Curso> Cursos => Set<Curso>();
 }

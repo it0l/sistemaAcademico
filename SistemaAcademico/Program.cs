@@ -7,78 +7,121 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=sistema.db"));
+    options.UseSqlite(connectionString));
 
 var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.MapGet("/", () => "Sistema Acadêmico API");
-
-
-// LISTAR ALUNOS
-app.MapGet("/alunos", async (AppDbContext db) =>
+using (var scope = app.Services.CreateScope())
 {
-    return await db.Alunos.ToListAsync();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    context.Database.Migrate();
+}
+
+// ==================== ALUNOS ====================
+
+app.MapGet("/alunos", (AppDbContext context) =>
+{
+    return context.Alunos.ToList();
 });
 
-
-// BUSCAR ALUNO POR ID
-app.MapGet("/alunos/{id}", async (int id, AppDbContext db) =>
+app.MapGet("/alunos/{id}", (int id, AppDbContext context) =>
 {
-    var aluno = await db.Alunos.FindAsync(id);
-
-    return aluno is null
-        ? Results.NotFound("Aluno não encontrado")
-        : Results.Ok(aluno);
-});
-
-
-// CADASTRAR ALUNO
-app.MapPost("/alunos", async (Aluno aluno, AppDbContext db) =>
-{
-    db.Alunos.Add(aluno);
-
-    await db.SaveChangesAsync();
-
-    return Results.Created($"/alunos/{aluno.Id}", aluno);
-});
-
-
-// ATUALIZAR ALUNO
-app.MapPut("/alunos/{id}", async (int id, Aluno dados, AppDbContext db) =>
-{
-    var aluno = await db.Alunos.FindAsync(id);
-
-    if (aluno is null)
+    var aluno = context.Alunos.Find(id);
+    if (aluno == null)
         return Results.NotFound("Aluno não encontrado");
-
-    aluno.Nome = dados.Nome;
-    aluno.Email = dados.Email;
-    aluno.MatriculaNumero = dados.MatriculaNumero;
-    aluno.DataNascimento = dados.DataNascimento;
-
-    await db.SaveChangesAsync();
-
     return Results.Ok(aluno);
 });
 
-
-// REMOVER ALUNO
-app.MapDelete("/alunos/{id}", async (int id, AppDbContext db) =>
+app.MapPost("/alunos", (Aluno aluno, AppDbContext context) =>
 {
-    var aluno = await db.Alunos.FindAsync(id);
+    context.Alunos.Add(aluno);
+    context.SaveChanges();
+    return Results.Created($"/alunos/{aluno.Id}", aluno);
+});
 
-    if (aluno is null)
+app.MapPut("/alunos/{id}", (int id, Aluno atualizado, AppDbContext context) =>
+{
+    var aluno = context.Alunos.Find(id);
+    if (aluno == null)
         return Results.NotFound("Aluno não encontrado");
 
-    db.Alunos.Remove(aluno);
+    aluno.Nome = atualizado.Nome;
+    aluno.Email = atualizado.Email;
+    aluno.MatriculaNumero = atualizado.MatriculaNumero;
+    aluno.DataNascimento = atualizado.DataNascimento;
 
-    await db.SaveChangesAsync();
+    context.SaveChanges();
+    return Results.Ok(aluno);
+});
 
-    return Results.Ok("Aluno removido com sucesso");
+app.MapDelete("/alunos/{id}", (int id, AppDbContext context) =>
+{
+    var aluno = context.Alunos.Find(id);
+    if (aluno == null)
+        return Results.NotFound("Aluno não encontrado");
+
+    context.Alunos.Remove(aluno);
+    context.SaveChanges();
+    return Results.Ok("Aluno removido");
+});
+
+// ==================== CURSOS ====================
+
+app.MapGet("/cursos", (AppDbContext context) =>
+{
+    return context.Cursos.ToList();
+});
+
+app.MapGet("/cursos/{id}", (int id, AppDbContext context) =>
+{
+    var curso = context.Cursos.Find(id);
+    if (curso == null)
+        return Results.NotFound("Curso não encontrado");
+    return Results.Ok(curso);
+});
+
+app.MapPost("/cursos", (Curso curso, AppDbContext context) =>
+{
+    if (curso.CargaHoraria <= 0)
+        return Results.BadRequest("Carga horária deve ser maior que zero");
+
+    context.Cursos.Add(curso);
+    context.SaveChanges();
+    return Results.Created($"/cursos/{curso.Id}", curso);
+});
+
+app.MapPut("/cursos/{id}", (int id, Curso atualizado, AppDbContext context) =>
+{
+    if (atualizado.CargaHoraria <= 0)
+        return Results.BadRequest("Carga horária deve ser maior que zero");
+
+    var curso = context.Cursos.Find(id);
+    if (curso == null)
+        return Results.NotFound("Curso não encontrado");
+
+    curso.Nome = atualizado.Nome;
+    curso.Professor = atualizado.Professor;
+    curso.CargaHoraria = atualizado.CargaHoraria;
+
+    context.SaveChanges();
+    return Results.Ok(curso);
+});
+
+app.MapDelete("/cursos/{id}", (int id, AppDbContext context) =>
+{
+    var curso = context.Cursos.Find(id);
+    if (curso == null)
+        return Results.NotFound("Curso não encontrado");
+
+    context.Cursos.Remove(curso);
+    context.SaveChanges();
+    return Results.Ok("Curso removido");
 });
 
 app.Run();

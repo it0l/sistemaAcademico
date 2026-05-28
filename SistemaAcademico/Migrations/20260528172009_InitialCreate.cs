@@ -26,6 +26,21 @@ namespace SistemaAcademico.Migrations
                 {
                     table.PrimaryKey("PK_Alunos", x => x.Id);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "Cursos",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Nome = table.Column<string>(type: "TEXT", nullable: false),
+                    Professor = table.Column<string>(type: "TEXT", nullable: false),
+                    CargaHoraria = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Cursos", x => x.Id);
+                });
         }
 
         /// <inheritdoc />
@@ -33,6 +48,9 @@ namespace SistemaAcademico.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Alunos");
+
+            migrationBuilder.DropTable(
+                name: "Cursos");
         }
     }
 }

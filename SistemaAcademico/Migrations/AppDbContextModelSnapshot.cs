@@ -42,6 +42,28 @@ namespace SistemaAcademico.Migrations
 
                     b.ToTable("Alunos");
                 });
+
+            modelBuilder.Entity("SistemaAcademico.Models.Curso", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CargaHoraria")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Professor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Cursos");
+                });
 #pragma warning restore 612, 618
         }
     }
