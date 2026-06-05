@@ -1,8 +1,14 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using SistemaAcademico.Data;
 using SistemaAcademico.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -27,36 +33,104 @@ using (var scope = app.Services.CreateScope())
 
 app.MapGet("/alunos", (AppDbContext context) =>
 {
-    return context.Alunos.ToList();
+    var alunos = context.Alunos
+        .Include(a => a.Matriculas)
+        .ThenInclude(m => m.Curso)
+        .Select(a => new AlunoResponseDto
+        {
+            Id = a.Id,
+            Nome = a.Nome,
+            Email = a.Email,
+            MatriculaNumero = a.MatriculaNumero,
+            DataNascimento = a.DataNascimento,
+
+            Matriculas = a.Matriculas.Select(m => new MatriculaResumidaDto
+            {
+                Id = m.Id,
+                DataMatricula = m.DataMatricula,
+                Status = m.Status,
+
+                Curso = m.Curso == null ? null : new CursoResumidoDto
+                {
+                    Id = m.Curso.Id,
+                    Nome = m.Curso.Nome,
+                    Professor = m.Curso.Professor,
+                    CargaHoraria = m.Curso.CargaHoraria
+                }
+            }).ToList()
+        })
+        .ToList();
+
+    return Results.Ok(alunos);
 });
 
 app.MapGet("/alunos/{id}", (int id, AppDbContext context) =>
 {
-    var aluno = context.Alunos.Find(id);
+    var aluno = context.Alunos
+        .Include(a => a.Matriculas)
+        .ThenInclude(m => m.Curso)
+        .Where(a => a.Id == id)
+        .Select(a => new AlunoResponseDto
+        {
+            Id = a.Id,
+            Nome = a.Nome,
+            Email = a.Email,
+            MatriculaNumero = a.MatriculaNumero,
+            DataNascimento = a.DataNascimento,
+
+            Matriculas = a.Matriculas.Select(m => new MatriculaResumidaDto
+            {
+                Id = m.Id,
+                DataMatricula = m.DataMatricula,
+                Status = m.Status,
+
+                Curso = m.Curso == null ? null : new CursoResumidoDto
+                {
+                    Id = m.Curso.Id,
+                    Nome = m.Curso.Nome,
+                    Professor = m.Curso.Professor,
+                    CargaHoraria = m.Curso.CargaHoraria
+                }
+            }).ToList()
+        })
+        .FirstOrDefault();
+
     if (aluno == null)
         return Results.NotFound("Aluno não encontrado");
+
     return Results.Ok(aluno);
 });
 
-app.MapPost("/alunos", (Aluno aluno, AppDbContext context) =>
+app.MapPost("/alunos", (AlunoDto dto, AppDbContext context) =>
 {
+    var aluno = new Aluno
+    {
+        Nome = dto.Nome,
+        Email = dto.Email,
+        MatriculaNumero = dto.MatriculaNumero,
+        DataNascimento = dto.DataNascimento
+    };
+
     context.Alunos.Add(aluno);
     context.SaveChanges();
+
     return Results.Created($"/alunos/{aluno.Id}", aluno);
 });
 
-app.MapPut("/alunos/{id}", (int id, Aluno atualizado, AppDbContext context) =>
+app.MapPut("/alunos/{id}", (int id, AlunoDto dto, AppDbContext context) =>
 {
     var aluno = context.Alunos.Find(id);
+
     if (aluno == null)
         return Results.NotFound("Aluno não encontrado");
 
-    aluno.Nome = atualizado.Nome;
-    aluno.Email = atualizado.Email;
-    aluno.MatriculaNumero = atualizado.MatriculaNumero;
-    aluno.DataNascimento = atualizado.DataNascimento;
+    aluno.Nome = dto.Nome;
+    aluno.Email = dto.Email;
+    aluno.MatriculaNumero = dto.MatriculaNumero;
+    aluno.DataNascimento = dto.DataNascimento;
 
     context.SaveChanges();
+
     return Results.Ok(aluno);
 });
 
@@ -86,30 +160,40 @@ app.MapGet("/cursos/{id}", (int id, AppDbContext context) =>
     return Results.Ok(curso);
 });
 
-app.MapPost("/cursos", (Curso curso, AppDbContext context) =>
+app.MapPost("/cursos", (CursoDto dto, AppDbContext context) =>
 {
-    if (curso.CargaHoraria <= 0)
+    if (dto.CargaHoraria <= 0)
         return Results.BadRequest("Carga horária deve ser maior que zero");
+
+    var curso = new Curso
+    {
+        Nome = dto.Nome,
+        Professor = dto.Professor,
+        CargaHoraria = dto.CargaHoraria
+    };
 
     context.Cursos.Add(curso);
     context.SaveChanges();
+
     return Results.Created($"/cursos/{curso.Id}", curso);
 });
 
-app.MapPut("/cursos/{id}", (int id, Curso atualizado, AppDbContext context) =>
+app.MapPut("/cursos/{id}", (int id, CursoDto dto, AppDbContext context) =>
 {
-    if (atualizado.CargaHoraria <= 0)
-        return Results.BadRequest("Carga horária deve ser maior que zero");
-
     var curso = context.Cursos.Find(id);
+
     if (curso == null)
         return Results.NotFound("Curso não encontrado");
 
-    curso.Nome = atualizado.Nome;
-    curso.Professor = atualizado.Professor;
-    curso.CargaHoraria = atualizado.CargaHoraria;
+    if (dto.CargaHoraria <= 0)
+        return Results.BadRequest("Carga horária deve ser maior que zero");
+
+    curso.Nome = dto.Nome;
+    curso.Professor = dto.Professor;
+    curso.CargaHoraria = dto.CargaHoraria;
 
     context.SaveChanges();
+
     return Results.Ok(curso);
 });
 
@@ -128,10 +212,20 @@ app.MapDelete("/cursos/{id}", (int id, AppDbContext context) =>
 
 app.MapGet("/matriculas", (AppDbContext context) =>
 {
-    return context.Matriculas
+    var matriculas = context.Matriculas
         .Include(m => m.Aluno)
         .Include(m => m.Curso)
+        .Select(m => new MatriculaResponseDto
+        {
+            Id = m.Id,
+            NomeAluno = m.Aluno!.Nome,
+            NomeCurso = m.Curso!.Nome,
+            DataMatricula = m.DataMatricula,
+            Status = m.Status
+        })
         .ToList();
+
+    return Results.Ok(matriculas);
 });
 
 app.MapGet("/matriculas/{id}", (int id, AppDbContext context) =>
@@ -139,32 +233,63 @@ app.MapGet("/matriculas/{id}", (int id, AppDbContext context) =>
     var matricula = context.Matriculas
         .Include(m => m.Aluno)
         .Include(m => m.Curso)
-        .FirstOrDefault(m => m.Id == id);
+        .Where(m => m.Id == id)
+        .Select(m => new MatriculaResponseDto
+        {
+            Id = m.Id,
+            NomeAluno = m.Aluno!.Nome,
+            NomeCurso = m.Curso!.Nome,
+            DataMatricula = m.DataMatricula,
+            Status = m.Status
+        })
+        .FirstOrDefault();
 
     if (matricula == null)
-        return Results.NotFound("Matrícula não encontrada");
+        return Results.NotFound();
+
     return Results.Ok(matricula);
 });
 
-app.MapPost("/matriculas", (Matricula matricula, AppDbContext context) =>
+app.MapPost("/matriculas", (MatriculaDto dto, AppDbContext context) =>
 {
+    var aluno = context.Alunos.Find(dto.AlunoId);
+
+    if (aluno == null)
+        return Results.BadRequest("Aluno não encontrado");
+
+    var curso = context.Cursos.Find(dto.CursoId);
+
+    if (curso == null)
+        return Results.BadRequest("Curso não encontrado");
+
+    var matricula = new Matricula
+    {
+        AlunoId = dto.AlunoId,
+        CursoId = dto.CursoId,
+        DataMatricula = dto.DataMatricula,
+        Status = dto.Status
+    };
+
     context.Matriculas.Add(matricula);
     context.SaveChanges();
+
     return Results.Created($"/matriculas/{matricula.Id}", matricula);
 });
 
-app.MapPut("/matriculas/{id}", (int id, Matricula atualizado, AppDbContext context) =>
+app.MapPut("/matriculas/{id}", (int id, MatriculaDto dto, AppDbContext context) =>
 {
     var matricula = context.Matriculas.Find(id);
-    if (matricula == null)
-        return Results.NotFound("Matrícula não encontrada");
 
-    matricula.AlunoId = atualizado.AlunoId;
-    matricula.CursoId = atualizado.CursoId;
-    matricula.DataMatricula = atualizado.DataMatricula;
-    matricula.Status = atualizado.Status;
+    if (matricula == null)
+        return Results.NotFound();
+
+    matricula.AlunoId = dto.AlunoId;
+    matricula.CursoId = dto.CursoId;
+    matricula.DataMatricula = dto.DataMatricula;
+    matricula.Status = dto.Status;
 
     context.SaveChanges();
+
     return Results.Ok(matricula);
 });
 
