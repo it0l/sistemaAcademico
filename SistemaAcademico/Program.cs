@@ -103,6 +103,12 @@ app.MapGet("/alunos/{id}", (int id, AppDbContext context) =>
 
 app.MapPost("/alunos", (AlunoDto dto, AppDbContext context) =>
 {
+    if (string.IsNullOrWhiteSpace(dto.Nome))
+        return Results.BadRequest("Nome do aluno é obrigatório");
+
+    if (string.IsNullOrWhiteSpace(dto.Email))
+        return Results.BadRequest("Email do aluno é obrigatório");
+
     var aluno = new Aluno
     {
         Nome = dto.Nome,
@@ -162,6 +168,12 @@ app.MapGet("/cursos/{id}", (int id, AppDbContext context) =>
 
 app.MapPost("/cursos", (CursoDto dto, AppDbContext context) =>
 {
+    if (string.IsNullOrWhiteSpace(dto.Nome))
+        return Results.BadRequest("Nome do curso é obrigatório");
+
+    if (string.IsNullOrWhiteSpace(dto.Professor))
+        return Results.BadRequest("Nome do professor é obrigatório");
+
     if (dto.CargaHoraria <= 0)
         return Results.BadRequest("Carga horária deve ser maior que zero");
 
@@ -261,6 +273,10 @@ app.MapPost("/matriculas", (MatriculaDto dto, AppDbContext context) =>
 
     if (curso == null)
         return Results.BadRequest("Curso não encontrado");
+
+    var duplicada = context.Matriculas.Any(m => m.AlunoId == dto.AlunoId && m.CursoId == dto.CursoId);
+    if (duplicada)
+        return Results.BadRequest("Aluno já está matriculado neste curso");
 
     var matricula = new Matricula
     {
