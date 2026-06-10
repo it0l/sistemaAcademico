@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Elma Chips\\Documents\\MeuPC\\sistemaAcademico\\SistemaAcademico\\SistemaAcademico.csproj": {}
+    "C:\\Users\\i5\\Desktop\\ADS\\projeto-topicos\\av\\sistemaAcademico\\SistemaAcademico\\SistemaAcademico.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Elma Chips\\Documents\\MeuPC\\sistemaAcademico\\SistemaAcademico\\SistemaAcademico.csproj": {
+    "C:\\Users\\i5\\Desktop\\ADS\\projeto-topicos\\av\\sistemaAcademico\\SistemaAcademico\\SistemaAcademico.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Elma Chips\\Documents\\MeuPC\\sistemaAcademico\\SistemaAcademico\\SistemaAcademico.csproj",
+        "projectUniqueName": "C:\\Users\\i5\\Desktop\\ADS\\projeto-topicos\\av\\sistemaAcademico\\SistemaAcademico\\SistemaAcademico.csproj",
         "projectName": "SistemaAcademico",
-        "projectPath": "C:\\Users\\Elma Chips\\Documents\\MeuPC\\sistemaAcademico\\SistemaAcademico\\SistemaAcademico.csproj",
-        "packagesPath": "C:\\Users\\Elma Chips\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Elma Chips\\Documents\\MeuPC\\sistemaAcademico\\SistemaAcademico\\obj\\",
+        "projectPath": "C:\\Users\\i5\\Desktop\\ADS\\projeto-topicos\\av\\sistemaAcademico\\SistemaAcademico\\SistemaAcademico.csproj",
+        "packagesPath": "C:\\Users\\i5\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\i5\\Desktop\\ADS\\projeto-topicos\\av\\sistemaAcademico\\SistemaAcademico\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Elma Chips\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\i5\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -38,7 +38,7 @@
           "auditLevel": "low",
           "auditMode": "all"
         },
-        "SdkAnalysisLevel": "10.0.200"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net10.0": {
@@ -88,7 +88,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

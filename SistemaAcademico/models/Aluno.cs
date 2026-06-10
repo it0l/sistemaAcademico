@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace SistemaAcademico.Models;
 
 public class Aluno
@@ -6,7 +8,7 @@ public class Aluno
     public string Nome { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string MatriculaNumero { get; set; } = string.Empty;
-    public DateTime DataNascimento { get; set; }
+    public string DataNascimento { get; set; } = string.Empty;
 
     public List<Matricula> Matriculas { get; set; } = new();
 }

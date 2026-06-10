@@ -29,93 +29,28 @@ using (var scope = app.Services.CreateScope())
     context.Database.Migrate();
 }
 
-// ==================== ALUNOS ====================
-
 app.MapGet("/alunos", (AppDbContext context) =>
 {
-    var alunos = context.Alunos
-        .Include(a => a.Matriculas)
-        .ThenInclude(m => m.Curso)
-        .Select(a => new AlunoResponseDto
-        {
-            Id = a.Id,
-            Nome = a.Nome,
-            Email = a.Email,
-            MatriculaNumero = a.MatriculaNumero,
-            DataNascimento = a.DataNascimento,
-
-            Matriculas = a.Matriculas.Select(m => new MatriculaResumidaDto
-            {
-                Id = m.Id,
-                DataMatricula = m.DataMatricula,
-                Status = m.Status,
-
-                Curso = m.Curso == null ? null : new CursoResumidoDto
-                {
-                    Id = m.Curso.Id,
-                    Nome = m.Curso.Nome,
-                    Professor = m.Curso.Professor,
-                    CargaHoraria = m.Curso.CargaHoraria
-                }
-            }).ToList()
-        })
-        .ToList();
-
-    return Results.Ok(alunos);
+    return Results.Ok(context.Alunos);
 });
 
 app.MapGet("/alunos/{id}", (int id, AppDbContext context) =>
 {
-    var aluno = context.Alunos
-        .Include(a => a.Matriculas)
-        .ThenInclude(m => m.Curso)
-        .Where(a => a.Id == id)
-        .Select(a => new AlunoResponseDto
-        {
-            Id = a.Id,
-            Nome = a.Nome,
-            Email = a.Email,
-            MatriculaNumero = a.MatriculaNumero,
-            DataNascimento = a.DataNascimento,
-
-            Matriculas = a.Matriculas.Select(m => new MatriculaResumidaDto
-            {
-                Id = m.Id,
-                DataMatricula = m.DataMatricula,
-                Status = m.Status,
-
-                Curso = m.Curso == null ? null : new CursoResumidoDto
-                {
-                    Id = m.Curso.Id,
-                    Nome = m.Curso.Nome,
-                    Professor = m.Curso.Professor,
-                    CargaHoraria = m.Curso.CargaHoraria
-                }
-            }).ToList()
-        })
-        .FirstOrDefault();
+    var aluno = context.Alunos.Find(id);
 
     if (aluno == null)
-        return Results.NotFound("Aluno não encontrado");
+        return Results.NotFound("Aluno nao encontrado");
 
     return Results.Ok(aluno);
 });
 
-app.MapPost("/alunos", (AlunoDto dto, AppDbContext context) =>
+app.MapPost("/alunos", (Aluno aluno, AppDbContext context) =>
 {
-    if (string.IsNullOrWhiteSpace(dto.Nome))
-        return Results.BadRequest("Nome do aluno é obrigatório");
+    if (string.IsNullOrWhiteSpace(aluno.Nome))
+        return Results.BadRequest("Nome do aluno e obrigatorio");
 
-    if (string.IsNullOrWhiteSpace(dto.Email))
-        return Results.BadRequest("Email do aluno é obrigatório");
-
-    var aluno = new Aluno
-    {
-        Nome = dto.Nome,
-        Email = dto.Email,
-        MatriculaNumero = dto.MatriculaNumero,
-        DataNascimento = dto.DataNascimento
-    };
+    if (string.IsNullOrWhiteSpace(aluno.Email))
+        return Results.BadRequest("Email do aluno e obrigatorio");
 
     context.Alunos.Add(aluno);
     context.SaveChanges();
@@ -123,20 +58,19 @@ app.MapPost("/alunos", (AlunoDto dto, AppDbContext context) =>
     return Results.Created($"/alunos/{aluno.Id}", aluno);
 });
 
-app.MapPut("/alunos/{id}", (int id, AlunoDto dto, AppDbContext context) =>
+app.MapPut("/alunos/{id}", (int id, Aluno alunoAlterado, AppDbContext context) =>
 {
     var aluno = context.Alunos.Find(id);
 
     if (aluno == null)
-        return Results.NotFound("Aluno não encontrado");
+        return Results.NotFound("Aluno nao encontrado");
 
-    aluno.Nome = dto.Nome;
-    aluno.Email = dto.Email;
-    aluno.MatriculaNumero = dto.MatriculaNumero;
-    aluno.DataNascimento = dto.DataNascimento;
+    aluno.Nome = alunoAlterado.Nome;
+    aluno.Email = alunoAlterado.Email;
+    aluno.MatriculaNumero = alunoAlterado.MatriculaNumero;
+    aluno.DataNascimento = alunoAlterado.DataNascimento;
 
     context.SaveChanges();
-
     return Results.Ok(aluno);
 });
 
@@ -144,45 +78,37 @@ app.MapDelete("/alunos/{id}", (int id, AppDbContext context) =>
 {
     var aluno = context.Alunos.Find(id);
     if (aluno == null)
-        return Results.NotFound("Aluno não encontrado");
+        return Results.NotFound("Aluno nao encontrado");
 
     context.Alunos.Remove(aluno);
     context.SaveChanges();
     return Results.Ok("Aluno removido");
 });
 
-// ==================== CURSOS ====================
-
 app.MapGet("/cursos", (AppDbContext context) =>
 {
-    return context.Cursos.ToList();
+    return Results.Ok(context.Cursos);
 });
 
 app.MapGet("/cursos/{id}", (int id, AppDbContext context) =>
 {
     var curso = context.Cursos.Find(id);
     if (curso == null)
-        return Results.NotFound("Curso não encontrado");
+        return Results.NotFound("Curso nao encontrado");
+        
     return Results.Ok(curso);
 });
 
-app.MapPost("/cursos", (CursoDto dto, AppDbContext context) =>
+app.MapPost("/cursos", (Curso curso, AppDbContext context) =>
 {
-    if (string.IsNullOrWhiteSpace(dto.Nome))
-        return Results.BadRequest("Nome do curso é obrigatório");
+    if (string.IsNullOrWhiteSpace(curso.Nome))
+        return Results.BadRequest("Nome do curso e obrigatorio");
 
-    if (string.IsNullOrWhiteSpace(dto.Professor))
-        return Results.BadRequest("Nome do professor é obrigatório");
+    if (string.IsNullOrWhiteSpace(curso.Professor))
+        return Results.BadRequest("Nome do professor e obrigatorio");
 
-    if (dto.CargaHoraria <= 0)
-        return Results.BadRequest("Carga horária deve ser maior que zero");
-
-    var curso = new Curso
-    {
-        Nome = dto.Nome,
-        Professor = dto.Professor,
-        CargaHoraria = dto.CargaHoraria
-    };
+    if (curso.CargaHoraria <= 0)
+        return Results.BadRequest("Carga horaria deve ser maior que zero");
 
     context.Cursos.Add(curso);
     context.SaveChanges();
@@ -190,22 +116,21 @@ app.MapPost("/cursos", (CursoDto dto, AppDbContext context) =>
     return Results.Created($"/cursos/{curso.Id}", curso);
 });
 
-app.MapPut("/cursos/{id}", (int id, CursoDto dto, AppDbContext context) =>
+app.MapPut("/cursos/{id}", (int id, Curso cursoAlterado, AppDbContext context) =>
 {
     var curso = context.Cursos.Find(id);
 
     if (curso == null)
-        return Results.NotFound("Curso não encontrado");
+        return Results.NotFound("Curso nao encontrado");
 
-    if (dto.CargaHoraria <= 0)
-        return Results.BadRequest("Carga horária deve ser maior que zero");
+    if (cursoAlterado.CargaHoraria <= 0)
+        return Results.BadRequest("Carga horaria deve ser maior que zero");
 
-    curso.Nome = dto.Nome;
-    curso.Professor = dto.Professor;
-    curso.CargaHoraria = dto.CargaHoraria;
+    curso.Nome = cursoAlterado.Nome;
+    curso.Professor = cursoAlterado.Professor;
+    curso.CargaHoraria = cursoAlterado.CargaHoraria;
 
     context.SaveChanges();
-
     return Results.Ok(curso);
 });
 
@@ -213,78 +138,50 @@ app.MapDelete("/cursos/{id}", (int id, AppDbContext context) =>
 {
     var curso = context.Cursos.Find(id);
     if (curso == null)
-        return Results.NotFound("Curso não encontrado");
+        return Results.NotFound("Curso nao encontrado");
 
     context.Cursos.Remove(curso);
     context.SaveChanges();
     return Results.Ok("Curso removido");
 });
 
-// ==================== MATRÍCULAS ====================
-
 app.MapGet("/matriculas", (AppDbContext context) =>
 {
-    var matriculas = context.Matriculas
-        .Include(m => m.Aluno)
-        .Include(m => m.Curso)
-        .Select(m => new MatriculaResponseDto
-        {
-            Id = m.Id,
-            NomeAluno = m.Aluno!.Nome,
-            NomeCurso = m.Curso!.Nome,
-            DataMatricula = m.DataMatricula,
-            Status = m.Status
-        })
-        .ToList();
-
-    return Results.Ok(matriculas);
+    return Results.Ok(context.Matriculas);
 });
 
 app.MapGet("/matriculas/{id}", (int id, AppDbContext context) =>
 {
-    var matricula = context.Matriculas
-        .Include(m => m.Aluno)
-        .Include(m => m.Curso)
-        .Where(m => m.Id == id)
-        .Select(m => new MatriculaResponseDto
-        {
-            Id = m.Id,
-            NomeAluno = m.Aluno!.Nome,
-            NomeCurso = m.Curso!.Nome,
-            DataMatricula = m.DataMatricula,
-            Status = m.Status
-        })
-        .FirstOrDefault();
+    var matricula = context.Matriculas.Find(id);
 
     if (matricula == null)
-        return Results.NotFound();
+        return Results.NotFound("Matricula nao encontrada");
 
     return Results.Ok(matricula);
 });
 
-app.MapPost("/matriculas", (MatriculaDto dto, AppDbContext context) =>
+app.MapPost("/matriculas", (Matricula matricula, AppDbContext context) =>
 {
-    var aluno = context.Alunos.Find(dto.AlunoId);
-
+    var aluno = context.Alunos.Find(matricula.AlunoId);
     if (aluno == null)
-        return Results.BadRequest("Aluno não encontrado");
+        return Results.BadRequest("Aluno nao encontrado");
 
-    var curso = context.Cursos.Find(dto.CursoId);
-
+    var curso = context.Cursos.Find(matricula.CursoId);
     if (curso == null)
-        return Results.BadRequest("Curso não encontrado");
+        return Results.BadRequest("Curso nao encontrado");
 
-    var duplicada = context.Matriculas.Any(m => m.AlunoId == dto.AlunoId && m.CursoId == dto.CursoId);
-    if (duplicada)
-        return Results.BadRequest("Aluno já está matriculado neste curso");
-
-    var matricula = new Matricula
+    bool duplicada = false;
+    foreach (var m in context.Matriculas)
     {
-        AlunoId = dto.AlunoId,
-        CursoId = dto.CursoId,
-        DataMatricula = dto.DataMatricula,
-        Status = dto.Status
-    };
+        if (m.AlunoId == matricula.AlunoId && m.CursoId == matricula.CursoId)
+        {
+            duplicada = true;
+            break;
+        }
+    }
+
+    if (duplicada)
+        return Results.BadRequest("Aluno ja esta matriculado neste curso");
 
     context.Matriculas.Add(matricula);
     context.SaveChanges();
@@ -292,20 +189,19 @@ app.MapPost("/matriculas", (MatriculaDto dto, AppDbContext context) =>
     return Results.Created($"/matriculas/{matricula.Id}", matricula);
 });
 
-app.MapPut("/matriculas/{id}", (int id, MatriculaDto dto, AppDbContext context) =>
+app.MapPut("/matriculas/{id}", (int id, Matricula matriculaAlterada, AppDbContext context) =>
 {
     var matricula = context.Matriculas.Find(id);
 
     if (matricula == null)
-        return Results.NotFound();
+        return Results.NotFound("Matricula nao encontrada");
 
-    matricula.AlunoId = dto.AlunoId;
-    matricula.CursoId = dto.CursoId;
-    matricula.DataMatricula = dto.DataMatricula;
-    matricula.Status = dto.Status;
+    matricula.AlunoId = matriculaAlterada.AlunoId;
+    matricula.CursoId = matriculaAlterada.CursoId;
+    matricula.DataMatricula = matriculaAlterada.DataMatricula;
+    matricula.Status = matriculaAlterada.Status;
 
     context.SaveChanges();
-
     return Results.Ok(matricula);
 });
 
@@ -313,11 +209,11 @@ app.MapDelete("/matriculas/{id}", (int id, AppDbContext context) =>
 {
     var matricula = context.Matriculas.Find(id);
     if (matricula == null)
-        return Results.NotFound("Matrícula não encontrada");
+        return Results.NotFound("Matricula nao encontrada");
 
     context.Matriculas.Remove(matricula);
     context.SaveChanges();
-    return Results.Ok("Matrícula removida");
+    return Results.Ok("Matricula removida");
 });
 
 app.Run();
