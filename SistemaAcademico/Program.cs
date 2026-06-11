@@ -94,6 +94,12 @@ app.MapPut("/alunos/{id}", (int id, Aluno alunoAlterado, AppDbContext context) =
     if (aluno == null)
         return Results.NotFound("Aluno nao encontrado");
 
+    if (string.IsNullOrWhiteSpace(alunoAlterado.Nome))
+        return Results.BadRequest("Nome do aluno e obrigatorio");
+
+    if (string.IsNullOrWhiteSpace(alunoAlterado.Email))
+        return Results.BadRequest("Email do aluno e obrigatorio");
+
     aluno.Nome = alunoAlterado.Nome;
     aluno.Email = alunoAlterado.Email;
     aluno.MatriculaNumero = alunoAlterado.MatriculaNumero;
@@ -151,6 +157,12 @@ app.MapPut("/cursos/{id}", (int id, Curso cursoAlterado, AppDbContext context) =
 
     if (curso == null)
         return Results.NotFound("Curso nao encontrado");
+
+    if (string.IsNullOrWhiteSpace(cursoAlterado.Nome))
+        return Results.BadRequest("Nome do curso e obrigatorio");
+
+    if (string.IsNullOrWhiteSpace(cursoAlterado.Professor))
+        return Results.BadRequest("Nome do professor e obrigatorio");
 
     if (cursoAlterado.CargaHoraria <= 0)
         return Results.BadRequest("Carga horaria deve ser maior que zero");
@@ -233,6 +245,30 @@ app.MapPut("/matriculas/{id}", (int id, Matricula matriculaAlterada, AppDbContex
 
     if (matricula == null)
         return Results.NotFound("Matricula nao encontrada");
+
+    var aluno = context.Alunos.Find(matriculaAlterada.AlunoId);
+    if (aluno == null)
+        return Results.BadRequest("Aluno nao encontrado");
+
+    var curso = context.Cursos.Find(matriculaAlterada.CursoId);
+    if (curso == null)
+        return Results.BadRequest("Curso nao encontrado");
+
+    if (matricula.AlunoId != matriculaAlterada.AlunoId || matricula.CursoId != matriculaAlterada.CursoId)
+    {
+        bool duplicada = false;
+        foreach (var m in context.Matriculas)
+        {
+            if (m.Id != id && m.AlunoId == matriculaAlterada.AlunoId && m.CursoId == matriculaAlterada.CursoId)
+            {
+                duplicada = true;
+                break;
+            }
+        }
+
+        if (duplicada)
+            return Results.BadRequest("Aluno ja esta matriculado neste curso");
+    }
 
     matricula.AlunoId = matriculaAlterada.AlunoId;
     matricula.CursoId = matriculaAlterada.CursoId;
