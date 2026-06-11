@@ -14,6 +14,6 @@ public class Matricula
     public int CursoId { get; set; }
     public Curso? Curso { get; set; }
 
-    public DateTime DataMatricula { get; set; }
+    public string DataMatricula { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
 }

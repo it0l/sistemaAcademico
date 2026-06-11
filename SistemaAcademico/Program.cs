@@ -31,7 +31,24 @@ using (var scope = app.Services.CreateScope())
 
 app.MapGet("/alunos", (AppDbContext context) =>
 {
-    return Results.Ok(context.Alunos);
+    var listaAlunos = context.Alunos.ToList();
+    var listaMatriculas = context.Matriculas.ToList();
+
+    foreach (var aluno in listaAlunos)
+    {
+        aluno.Matriculas.Clear(); 
+        
+        foreach (var m in listaMatriculas)
+        {
+            if (m.AlunoId == aluno.Id)
+            {
+                m.Curso = context.Cursos.Find(m.CursoId);
+                aluno.Matriculas.Add(m);
+            }
+        }
+    }
+
+    return Results.Ok(listaAlunos);
 });
 
 app.MapGet("/alunos/{id}", (int id, AppDbContext context) =>
@@ -41,9 +58,21 @@ app.MapGet("/alunos/{id}", (int id, AppDbContext context) =>
     if (aluno == null)
         return Results.NotFound("Aluno nao encontrado");
 
+    var listaMatriculas = context.Matriculas.ToList();
+    
+    aluno.Matriculas.Clear();
+    
+    foreach (var m in listaMatriculas)
+    {
+        if (m.AlunoId == aluno.Id)
+        {
+            m.Curso = context.Cursos.Find(m.CursoId);
+            aluno.Matriculas.Add(m);
+        }
+    }
+
     return Results.Ok(aluno);
 });
-
 app.MapPost("/alunos", (Aluno aluno, AppDbContext context) =>
 {
     if (string.IsNullOrWhiteSpace(aluno.Nome))
@@ -147,7 +176,14 @@ app.MapDelete("/cursos/{id}", (int id, AppDbContext context) =>
 
 app.MapGet("/matriculas", (AppDbContext context) =>
 {
-    return Results.Ok(context.Matriculas);
+    var listaMatriculas = context.Matriculas.ToList();
+
+    foreach (var m in listaMatriculas)
+    {
+        m.Curso = context.Cursos.Find(m.CursoId);
+    }
+
+    return Results.Ok(listaMatriculas);
 });
 
 app.MapGet("/matriculas/{id}", (int id, AppDbContext context) =>
@@ -156,6 +192,8 @@ app.MapGet("/matriculas/{id}", (int id, AppDbContext context) =>
 
     if (matricula == null)
         return Results.NotFound("Matricula nao encontrada");
+
+    matricula.Curso = context.Cursos.Find(matricula.CursoId);
 
     return Results.Ok(matricula);
 });
